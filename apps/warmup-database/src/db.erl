@@ -25,8 +25,17 @@ delete(Key, Db) ->
 
 %% @doc db:read(Key, Db) ⇒{ok, Element} | {error, instance}.
 read(Key, Db) ->
-    {error, instance}.
+    get(Key, Db).
 
 %% @doc db:match(Element, Db) ⇒ [Key1, ..., KeyN].
 match(Element, Db) ->
     [].
+
+
+%% @private
+get(Key, [{Key, Element}|_T]) ->
+    {ok, Element};
+get(Key, [{DifferentKey, Element}|T]) ->
+    get(Key, T);
+get(Key, []) ->
+    {error, instance}.
