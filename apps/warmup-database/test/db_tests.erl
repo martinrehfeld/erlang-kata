@@ -1,5 +1,6 @@
 -module(db_tests).
 -include_lib("eunit/include/eunit.hrl").
+-include("record.hrl").
 
 create_new_db_test() ->
     ?assertEqual([], db:new()).
@@ -12,13 +13,16 @@ write_keys_test() ->
     Db = db:new(),
 
     Db1 = db:write(francesco, london, Db),
-    ?assertEqual([{francesco, london}], Db1),
+    ?assertEqual([#data{key=francesco, data=london}], Db1),
 
     Db2 = db:write(lelle, stockholm, Db1),
-    ?assertEqual([{lelle, stockholm}, {francesco, london}], Db2),
+    ?assertEqual([#data{key=lelle, data=stockholm},
+                  #data{key=francesco, data=london}], Db2),
 
     Db3 = db:write(joern, stockholm, Db2),
-    ?assertEqual([{joern,stockholm},{lelle,stockholm},{francesco,london}], Db3).
+    ?assertEqual([#data{key=joern, data=stockholm},
+                  #data{key=lelle, data=stockholm},
+                  #data{key=francesco, data=london}], Db3).
 
 read_miss_test() ->
     Db = db:new(),
