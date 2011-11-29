@@ -12,7 +12,7 @@ new() ->
     [].
 
 %% @doc db:destroy(Db) ⇒ ok.
-destroy(Db) ->
+destroy(_Db) ->
     ok.
 
 %% @doc db:write(Key, Element, Db) ⇒ NewDb.
@@ -35,9 +35,9 @@ match(Element, Db) ->
 %% @private
 get(Key, [{Key, Element}|_T]) ->
     {ok, Element};
-get(Key, [{DifferentKey, Element}|T]) ->
+get(Key, [{_DifferentKey, _Element}|T]) ->
     get(Key, T);
-get(Key, []) ->
+get(_Key, []) ->
     {error, instance}.
 
 %% @private
@@ -47,10 +47,10 @@ find(Element, Db) ->
 
 find(Element, [{Key, Element}|T], Matches) ->
     find(Element, T, Matches ++ [Key]);
-find(Element, [{DifferentKey, _Element}|T], Matches) ->
+find(Element, [{_DifferentKey, _Element}|T], Matches) ->
     find(Element, T, Matches);
 
-find(Element, [], Matches) ->
+find(_Element, [], Matches) ->
     Matches.
 
 %% @private
@@ -59,5 +59,5 @@ reject(Key, [{Key, _Element}|T], Matches) ->
 reject(Key, [{DifferentKey, Element}|T], Matches) ->
     reject(Key, T, Matches ++ [{DifferentKey, Element}]);
 
-reject(Key, [], Matches) ->
+reject(_Key, [], Matches) ->
     Matches.
