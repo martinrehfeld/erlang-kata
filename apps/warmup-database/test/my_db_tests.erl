@@ -17,7 +17,8 @@ main_test_() ->
      [
       fun test_read_miss/1,
       fun test_write_and_read/1,
-      fun test_write_and_match/1
+      fun test_write_and_match/1,
+      fun test_delete/1
      ]}.
 
 %% tests with started my_db
@@ -39,6 +40,15 @@ test_write_and_match(_) ->
 
     [?_assertEqual(ok,    WriteResult),
      ?_assertEqual([foo], MatchResult)].
+
+test_delete(_) ->
+    WriteResult  = my_db:write(foo, bar),
+    DeleteResult = my_db:delete(foo),
+    ReadResult   = my_db:read(foo),
+
+    [?_assertEqual(ok,                WriteResult),
+     ?_assertEqual(ok,                DeleteResult),
+     ?_assertEqual({error, instance}, ReadResult)].
 
 %% helper
 

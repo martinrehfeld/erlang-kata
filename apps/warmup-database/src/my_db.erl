@@ -29,7 +29,13 @@ write(Key, Element) ->
 
 %% @doc my_db:delete(Key) ⇒ ok.
 delete(Key) ->
-    ok.
+    Ref = make_ref(),
+    ?MODULE ! {self(), Ref, {delete, Key}},
+    receive
+        {Ref, Result} -> Result
+    after 5000 ->
+        {error, timeout}
+    end.
 
 %% @doc my_db:read(Key) ⇒ {ok, Element} | {error, instance}.
 read(Key) ->
@@ -61,6 +67,10 @@ loop(Db) ->
     receive
         {Pid, MsgRef, {write, Key, Element}} ->
             Db1 = db:write(Key, Element, Db),
+            Pid ! {MsgRef, ok},
+            loop(Db1);
+        {Pid, MsgRef, {delete, Key}} ->
+            Db1 = db:delete(Key, Db),
             Pid ! {MsgRef, ok},
             loop(Db1);
         {Pid, MsgRef, {read, Key}} ->
