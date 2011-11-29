@@ -1,0 +1,12 @@
+{application, warmup_semaphore,
+ [
+  {description, ""},
+  {vsn, "0.0.1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  sasl,
+                 ]},
+  {env, []}
+ ]}.
