@@ -16,7 +16,8 @@ main_test_() ->
      fun cleanup/1,
      [
       fun test_read_miss/1,
-      fun test_write_and_read/1
+      fun test_write_and_read/1,
+      fun test_write_and_match/1
      ]}.
 
 %% tests with started my_db
@@ -31,6 +32,13 @@ test_write_and_read(_) ->
 
     [?_assertEqual(ok,        WriteResult),
      ?_assertEqual({ok, bar}, ReadResult)].
+
+test_write_and_match(_) ->
+    WriteResult = my_db:write(foo, bar),
+    MatchResult = my_db:match(bar),
+
+    [?_assertEqual(ok,    WriteResult),
+     ?_assertEqual([foo], MatchResult)].
 
 %% helper
 

@@ -43,7 +43,13 @@ read(Key) ->
 
 %% @doc my_db:match(Element) ⇒ [Key1, ..., KeyN].
 match(Element) ->
-    [].
+    Ref = make_ref(),
+    ?MODULE ! {self(), Ref, {match, Element}},
+    receive
+        {Ref, Result} -> Result
+    after 5000 ->
+        {error, timeout}
+    end.
 
 %% @private
 init() ->
@@ -59,6 +65,9 @@ loop(Db) ->
             loop(Db1);
         {Pid, MsgRef, {read, Key}} ->
             Pid ! {MsgRef, db:read(Key, Db)},
+            loop(Db);
+        {Pid, MsgRef, {match, Element}} ->
+            Pid ! {MsgRef, db:match(Element, Db)},
             loop(Db);
 
         shutdown ->
