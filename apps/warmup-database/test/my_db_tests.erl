@@ -39,7 +39,8 @@ setup() ->
 
 cleanup(Pid) ->
     my_db:stop(),
-    wait_for_exit(Pid).
+    wait_for_exit(Pid),
+    timer:sleep(100).
 
 wait_for_exit(Pid) ->
     MRef = erlang:monitor(process, Pid),
