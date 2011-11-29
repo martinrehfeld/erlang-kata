@@ -15,7 +15,9 @@ main_test_() ->
      fun setup/0,
      fun cleanup/1,
      [
-      fun test_mutex/1
+      fun test_mutex/1,
+      fun test_semaphore_holder_terminates/1,
+      fun test_waiting_process_terminates/1
      ]}.
 
 %% tests with started mutex
@@ -62,13 +64,50 @@ test_mutex(_) ->
      ?_assert(timer:now_diff(MutexEndA, MutexWaitB) > 0),
      ?_assert(timer:now_diff(MutexStartB, MutexEndA) > 0)].
 
+%% What happens if a process that currently holds the semaphore terminates prior to releasing it?
+test_semaphore_holder_terminates(_) ->
+    PidA = spawn(fun () ->
+            ok = mutex:wait(),
+            timer:sleep(100)
+        end),
+
+    PidB = spawn(fun () ->
+            timer:sleep(200),
+            ok = mutex:wait(),
+            ok = mutex:signal()
+        end),
+
+    ExitReasonPidA = wait_for_exit(PidA),
+    ExitReasonPidB = wait_for_exit(PidB),
+
+    [?_assertEqual(normal, ExitReasonPidA),
+     ?_assertMatch(normal, ExitReasonPidB)].
+
+%% Or what happens if a process waiting to execute is terminated due to an exit signal?
+test_waiting_process_terminates(_) ->
+    PidA = spawn(fun () ->
+            ok = mutex:wait(),
+            timer:sleep(100),
+            ok = mutex:signal()
+        end),
+
+    PidB = spawn(fun () ->
+            ok = mutex:wait()
+        end),
+
+    exit(PidB, kill),
+
+    ExitReasonPidA = wait_for_exit(PidA),
+
+    [?_assertEqual(normal, ExitReasonPidA)].
+
 %% helper
 
 setup() ->
     mutex:start().
 
 cleanup(Pid) ->
-    mutex:stop(),
+    catch mutex:stop(),
     wait_for_exit(Pid),
     timer:sleep(100).
 
