@@ -32,9 +32,18 @@ read_hit_test() ->
 
 match_test() ->
     Db = db:new(),
-
     Db1 = db:write(francesco, london, Db),
     Db2 = db:write(lelle, stockholm, Db1),
     Db3 = db:write(joern, stockholm, Db2),
 
     ?assertEqual([joern,lelle], db:match(stockholm, Db3)).
+
+delete_test() ->
+    Db = db:new(),
+    Db1 = db:write(francesco, london, Db),
+    Db2 = db:write(lelle, stockholm, Db1),
+    Db3 = db:write(joern, stockholm, Db2),
+
+    Db4 = db:delete(lelle, Db3),
+
+    ?assertEqual([joern], db:match(stockholm, Db4)).

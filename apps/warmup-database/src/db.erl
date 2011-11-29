@@ -21,7 +21,7 @@ write(Key, Element, Db) ->
 
 %% @doc db:delete(Key, Db) ⇒ NewDb.
 delete(Key, Db) ->
-    Db.
+    reject(Key, Db, []).
 
 %% @doc db:read(Key, Db) ⇒{ok, Element} | {error, instance}.
 read(Key, Db) ->
@@ -51,4 +51,13 @@ find(Element, [{DifferentKey, _Element}|T], Matches) ->
     find(Element, T, Matches);
 
 find(Element, [], Matches) ->
+    Matches.
+
+%% @private
+reject(Key, [{Key, _Element}|T], Matches) ->
+    reject(Key, T, Matches);
+reject(Key, [{DifferentKey, Element}|T], Matches) ->
+    reject(Key, T, Matches ++ [{DifferentKey, Element}]);
+
+reject(Key, [], Matches) ->
     Matches.
