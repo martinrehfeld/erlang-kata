@@ -9,10 +9,12 @@
 
 %% @doc ￼my_db:start() ⇒ ok.
 start() ->
+    register(?MODULE, spawn(fun init/0)),
     ok.
 
 %% @doc my_db:stop() ⇒ ok.
 stop() ->
+    ?MODULE ! shutdown,
     ok.
 
 %% @doc my_db:write(Key, Element) ⇒ ok.
@@ -30,3 +32,20 @@ read(Key) ->
 %% @doc my_db:match(Element) ⇒ [Key1, ..., KeyN].
 match(Element) ->
     [].
+
+%% @private
+init() ->
+    Db = db:new(),
+    loop(Db).
+
+%% @private
+loop(Db) ->
+    receive
+        shutdown ->
+            exit(shutdown);
+        code_change ->
+            ?MODULE:loop(Db);
+        Unknown ->
+            error_logger:warning_msg("my_db received unknown message: ~p~n",[Unknown]),
+            loop(Db)
+    end.
