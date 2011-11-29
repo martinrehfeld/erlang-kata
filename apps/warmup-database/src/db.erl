@@ -17,7 +17,7 @@ destroy(Db) ->
 
 %% @doc db:write(Key, Element, Db) ⇒ NewDb.
 write(Key, Element, Db) ->
-    Db.
+    [{Key, Element}|Db].
 
 %% @doc db:delete(Key, Db) ⇒ NewDb.
 delete(Key, Db) ->
