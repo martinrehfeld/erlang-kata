@@ -42,13 +42,17 @@ init() ->
     loop(#state{semaphore=free}).
 
 %% @private
-loop(S) ->
+loop(#state{semaphore=Semaphore}=S) ->
     receive
+        {Pid, MsgRef, wait} when Semaphore =:= free ->
+            Pid ! {MsgRef, ok},
+            loop(#state{semaphore=busy});
+        {Pid, MsgRef, signal} when Semaphore =:= busy ->
+            Pid ! {MsgRef, ok},
+            loop(#state{semaphore=free});
+
         shutdown ->
             exit(shutdown);
         code_change ->
-            ?MODULE:loop(S);
-        Unknown ->
-            error_logger:warning_msg("my_db received unknown message: ~p~n",[Unknown]),
-            loop(S)
+            ?MODULE:loop(S)
     end.
