@@ -29,7 +29,7 @@ read(Key, Db) ->
 
 %% @doc db:match(Element, Db) ⇒ [Key1, ..., KeyN].
 match(Element, Db) ->
-    [].
+    find(Element, Db).
 
 
 %% @private
@@ -39,3 +39,16 @@ get(Key, [{DifferentKey, Element}|T]) ->
     get(Key, T);
 get(Key, []) ->
     {error, instance}.
+
+%% @private
+find(Element, Db) ->
+    Matches = [],
+    find(Element, Db, Matches).
+
+find(Element, [{Key, Element}|T], Matches) ->
+    find(Element, T, Matches ++ [Key]);
+find(Element, [{DifferentKey, _Element}|T], Matches) ->
+    find(Element, T, Matches);
+
+find(Element, [], Matches) ->
+    Matches.

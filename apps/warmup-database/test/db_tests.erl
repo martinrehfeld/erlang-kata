@@ -29,3 +29,12 @@ read_hit_test() ->
     Db1 = db:write(ola, barcelona, Db),
     Db2 = db:write(oliver, berlin, Db1),
     ?assertEqual({ok, barcelona}, db:read(ola, Db2)).
+
+match_test() ->
+    Db = db:new(),
+
+    Db1 = db:write(francesco, london, Db),
+    Db2 = db:write(lelle, stockholm, Db1),
+    Db3 = db:write(joern, stockholm, Db2),
+
+    ?assertEqual([joern,lelle], db:match(stockholm, Db3)).
