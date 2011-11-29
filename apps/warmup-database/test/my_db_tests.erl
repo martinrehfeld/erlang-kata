@@ -15,13 +15,22 @@ main_test_() ->
      fun setup/0,
      fun cleanup/1,
      [
-      fun test_write/1
+      fun test_read_miss/1,
+      fun test_write_and_read/1
      ]}.
 
 %% tests with started my_db
 
-test_write(_) ->
-    ?_assertEqual(ok, my_db:write(foo, bar)).
+test_read_miss(_) ->
+    Result = my_db:read(baz),
+    ?_assertEqual({error, instance}, Result).
+
+test_write_and_read(_) ->
+    WriteResult = my_db:write(foo, bar),
+    ReadResult  = my_db:read(foo),
+
+    [?_assertEqual(ok,        WriteResult),
+     ?_assertEqual({ok, bar}, ReadResult)].
 
 %% helper
 

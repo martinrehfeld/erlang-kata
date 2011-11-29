@@ -19,8 +19,13 @@ stop() ->
 
 %% @doc my_db:write(Key, Element) ⇒ ok.
 write(Key, Element) ->
-    ?MODULE ! {write, Key, Element},
-    ok.
+    Ref = make_ref(),
+    ?MODULE ! {self(), Ref, {write, Key, Element}},
+    receive
+        {Ref, Result} -> Result
+    after 5000 ->
+        {error, timeout}
+    end.
 
 %% @doc my_db:delete(Key) ⇒ ok.
 delete(Key) ->
@@ -28,7 +33,13 @@ delete(Key) ->
 
 %% @doc my_db:read(Key) ⇒ {ok, Element} | {error, instance}.
 read(Key) ->
-    {error, instance}.
+    Ref = make_ref(),
+    ?MODULE ! {self(), Ref, {read, Key}},
+    receive
+        {Ref, Result} -> Result
+    after 5000 ->
+        {error, timeout}
+    end.
 
 %% @doc my_db:match(Element) ⇒ [Key1, ..., KeyN].
 match(Element) ->
@@ -42,8 +53,12 @@ init() ->
 %% @private
 loop(Db) ->
     receive
-        {write, Key, Element} ->
-            db:write(Key, Element, Db),
+        {Pid, MsgRef, {write, Key, Element}} ->
+            Db1 = db:write(Key, Element, Db),
+            Pid ! {MsgRef, ok},
+            loop(Db1);
+        {Pid, MsgRef, {read, Key}} ->
+            Pid ! {MsgRef, db:read(Key, Db)},
             loop(Db);
 
         shutdown ->
