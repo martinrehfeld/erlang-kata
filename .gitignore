@@ -1,0 +1,4 @@
+*.dump
+*.beam
+.eunit
+deps
