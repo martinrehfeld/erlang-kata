@@ -19,6 +19,7 @@ stop() ->
 
 %% @doc my_db:write(Key, Element) ⇒ ok.
 write(Key, Element) ->
+    ?MODULE ! {write, Key, Element},
     ok.
 
 %% @doc my_db:delete(Key) ⇒ ok.
@@ -41,6 +42,10 @@ init() ->
 %% @private
 loop(Db) ->
     receive
+        {write, Key, Element} ->
+            db:write(Key, Element, Db),
+            loop(Db);
+
         shutdown ->
             exit(shutdown);
         code_change ->
