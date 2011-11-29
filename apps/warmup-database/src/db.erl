@@ -1,5 +1,5 @@
 %% @doc `db' module as a warmup exercise for the erlang course held at wooga
-%% @version Exercise 3
+%% @version Exercise 4
 %%
 %% @author Martin Rehfeld <martin.rehfeld@glnetworks.de>
 
@@ -10,55 +10,31 @@
 
 %% @doc ￼db:new() ⇒ Db.
 new() ->
-    [].
+    ets:new(db, [private, {keypos,2}]).
 
 %% @doc db:destroy(Db) ⇒ ok.
-destroy(_Db) ->
+destroy(Db) ->
+    ets:delete(Db),
     ok.
 
 %% @doc db:write(Key, Element, Db) ⇒ NewDb.
 write(Key, Element, Db) ->
-    [#data{key=Key, data=Element}|Db].
+    ets:insert(Db, #data{key=Key, data=Element}),
+    Db.
 
 %% @doc db:delete(Key, Db) ⇒ NewDb.
 delete(Key, Db) ->
-    reject(Key, Db, []).
+    ets:delete(Db, Key),
+    Db.
 
 %% @doc db:read(Key, Db) ⇒{ok, Element} | {error, instance}.
 read(Key, Db) ->
-    get(Key, Db).
+    case ets:lookup(Db, Key) of
+        []       -> {error, instance};
+        [Record] -> {ok, Record#data.data}
+    end.
 
 %% @doc db:match(Element, Db) ⇒ [Key1, ..., KeyN].
 match(Element, Db) ->
-    find(Element, Db).
-
-
-%% @private
-get(Key, [#data{key=Key, data=Element}|_T]) ->
-    {ok, Element};
-get(Key, [_Record|T]) ->
-    get(Key, T);
-get(_Key, []) ->
-    {error, instance}.
-
-%% @private
-find(Element, Db) ->
-    Matches = [],
-    find(Element, Db, Matches).
-
-find(Element, [#data{key=Key, data=Element}|T], Matches) ->
-    find(Element, T, Matches ++ [Key]);
-find(Element, [_Record|T], Matches) ->
-    find(Element, T, Matches);
-
-find(_Element, [], Matches) ->
-    Matches.
-
-%% @private
-reject(Key, [#data{key=Key}|T], Matches) ->
-    reject(Key, T, Matches);
-reject(Key, [Record|T], Matches) ->
-    reject(Key, T, Matches ++ [Record]);
-
-reject(_Key, [], Matches) ->
-    Matches.
+    Matches = ets:match(Db, #data{key='$1', data=Element}),
+    [hd(X) || X <- Matches].

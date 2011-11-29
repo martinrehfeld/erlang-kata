@@ -3,7 +3,8 @@
 -include("record.hrl").
 
 create_new_db_test() ->
-    ?assertEqual([], db:new()).
+    Db = db:new(),
+    ?assertEqual([], ets:tab2list(Db)).
 
 destroy_db_test() ->
     Db = db:new(),
@@ -13,16 +14,19 @@ write_keys_test() ->
     Db = db:new(),
 
     Db1 = db:write(francesco, london, Db),
-    ?assertEqual([#data{key=francesco, data=london}], Db1),
+    ?assertEqual({ok, london}, db:read(francesco, Db1)),
+    ?assertMatch([_], ets:tab2list(Db1)),
 
     Db2 = db:write(lelle, stockholm, Db1),
-    ?assertEqual([#data{key=lelle, data=stockholm},
-                  #data{key=francesco, data=london}], Db2),
+    ?assertEqual({ok, stockholm}, db:read(lelle, Db2)),
+    ?assertEqual({ok, london}, db:read(francesco, Db2)),
+    ?assertMatch([_, _], ets:tab2list(Db2)),
 
     Db3 = db:write(joern, stockholm, Db2),
-    ?assertEqual([#data{key=joern, data=stockholm},
-                  #data{key=lelle, data=stockholm},
-                  #data{key=francesco, data=london}], Db3).
+    ?assertEqual({ok, stockholm}, db:read(joern, Db3)),
+    ?assertEqual({ok, stockholm}, db:read(lelle, Db3)),
+    ?assertEqual({ok, london}, db:read(francesco, Db3)),
+    ?assertMatch([_, _, _], ets:tab2list(Db3)).
 
 read_miss_test() ->
     Db = db:new(),
