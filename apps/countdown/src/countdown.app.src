@@ -1,12 +1,11 @@
-{application, _template,
+{application, countdown,
  [
-  {description, ""},
+  {description, "Solver for the numbers round of the Countdown TV show"},
   {vsn, "0.0.1"},
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib,
-                  sasl
+                  stdlib
                  ]},
   {env, []}
  ]}.
