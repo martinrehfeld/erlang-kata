@@ -3,3 +3,4 @@
 .eunit
 deps
 ebin
+.rvmrc
