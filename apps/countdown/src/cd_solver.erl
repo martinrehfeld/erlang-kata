@@ -112,7 +112,7 @@ combine_operators(I, J, S1, S2, A, Target) ->
                     Index = I bor J,
                     Entries = array:get(Index, Array),
                     NewEntries = orddict:store(Delta, Solution, Entries),
-                    array:set(I bor J, NewEntries, Array)
+                    array:set(Index, NewEntries, Array)
             end
         end,
     lists:foldl(F, A, ?OPERATORS).
