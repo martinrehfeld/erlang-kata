@@ -42,9 +42,19 @@ divide_test() ->
     ?assertEqual(not_allowed, cd_solver:divide(1, 2)),
     ?assertEqual(1,           cd_solver:divide(2, 2)).
 
-solver_test() ->
-    %% Solutions: [{delta, #solution}, ...]
-    Solutions1 = cd_solver:solutions(178, [100, 75, 3]),
-    Solutions2 = cd_solver:solutions(203, [50, 100, 4, 2, 2, 4]),
-    ?assertMatch([{0, _}], Solutions1),
-    ?assertMatch([{0, _} | _], Solutions2).
+%% Solutions: [{delta, #solution}, ...]
+solver_input1_test() ->
+    Solutions = cd_solver:solutions(203, [ 50, 100, 4, 2, 2, 4 ]),
+    ?assertMatch([{0, _} | _], Solutions).
+
+solver_input2_test() ->
+    Solutions = cd_solver:solutions(465, [ 25, 4, 9, 2, 3, 10 ]),
+    ?assertMatch([{0, _} | _], Solutions).
+
+solver_input3_test() ->
+    Solutions = cd_solver:solutions(241, [ 9, 8, 10, 5, 9, 7 ]),
+    ?assertMatch([{0, _} | _], Solutions).
+
+solver_input4_test() ->
+    Solutions = cd_solver:solutions(824, [ 3, 7, 6, 2, 1, 7 ]),
+    ?assertMatch([{2, _} | _], Solutions). % best solution is 826 with a delta of 2
