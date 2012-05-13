@@ -18,11 +18,11 @@
 %% TESTS
 %%
 
-available_indexes_test() ->
-    ?assertEqual([], cd_solver:available_indexes(2,1)),
-    ?assertEqual([1], cd_solver:available_indexes(0,1)),
-    ?assertEqual([2], cd_solver:available_indexes(2,2)),
-    ?assertEqual([3], cd_solver:available_indexes(6,3)).
+%% available_indexes_test() ->
+%%     ?assertEqual([], cd_solver:available_indexes(2,1)),
+%%     ?assertEqual([1], cd_solver:available_indexes(0,1)),
+%%     ?assertEqual([2], cd_solver:available_indexes(2,2)),
+%%     ?assertEqual([3], cd_solver:available_indexes(6,3)).
 
 add_test() ->
     ?assertEqual(no_op,       cd_solver:add(1, 0)),
@@ -42,12 +42,9 @@ divide_test() ->
     ?assertEqual(not_allowed, cd_solver:divide(1, 2)),
     ?assertEqual(1,           cd_solver:divide(2, 2)).
 
-solver_test_() ->
-    %% Solutions: [{actual_result, [n1, op1, n2, op2, ...]}, ...]
-    {timeout, 600, fun() ->
-            Solutions1 = cd_solver:solutions(178, [100, 75, 3]),
-            %% Solutions2 = cd_solver:solutions(203, [50, 100, 4, 2, 2, 4]),
-            [?_assert(proplists:lookup(178, Solutions1) =/= none)
-            %% ,?_assert(proplists:lookup(203, Solutions2) =/= none)
-            ]
-        end}.
+solver_test() ->
+    %% Solutions: [{delta, #solution}, ...]
+    Solutions1 = cd_solver:solutions(178, [100, 75, 3]),
+    Solutions2 = cd_solver:solutions(203, [50, 100, 4, 2, 2, 4]),
+    ?assertMatch([{0, _}], Solutions1),
+    ?assertMatch([{0, _} | _], Solutions2).
