@@ -29,7 +29,7 @@ solutions(Target, Numbers) ->
 %% [{DeltaToTargetValue, #solution}, ...]
 initialize_solutions(Target, Numbers) ->
     MapSize = 1 bsl length(Numbers),
-    A = array:new(MapSize, {default, []}),
+    A = array:new(MapSize),
 
     F = fun(Index, Array) ->
             UsedBitmap = bitmap_for_index(Index),
@@ -37,7 +37,8 @@ initialize_solutions(Target, Numbers) ->
             Delta = abs(Target - Number),
             Expression = list_to_binary(integer_to_list(Number)),
             S = #solution{result=Number, expression=Expression},
-            array:set(UsedBitmap, [{Delta, S}], Array)
+            Dict = dict:new(),
+            array:set(UsedBitmap, dict:store(Delta, S, Dict), Array)
         end,
     lists:foldl(F, A, lists:seq(1, length(Numbers))).
 
@@ -89,11 +90,11 @@ combine_solutions(I, J, Solutions1, Solutions2, A, Target) ->
 
     FS =
         fun(_S, Solution, Array) ->
-            {Solution, NewArray} = orddict:fold(FT, {Solution, Array}, Solutions2),
+            {Solution, NewArray} = dict:fold(FT, {Solution, Array}, Solutions2),
             NewArray
         end,
 
-    orddict:fold(FS, A, Solutions1).
+    dict:fold(FS, A, Solutions1).
 
 
 %% @doc: combination on the operator level: combine two specific solutions with
@@ -111,7 +112,12 @@ combine_operators(I, J, S1, S2, A, Target) ->
                     Delta = abs(Target - Result),
                     Index = I bor J,
                     Entries = array:get(Index, Array),
-                    NewEntries = orddict:store(Delta, Solution, Entries),
+                    Dict =
+                        case Entries of
+                            undefined -> dict:new();
+                            Entries -> Entries
+                        end,
+                    NewEntries = dict:store(Delta, Solution, Dict),
                     array:set(Index, NewEntries, Array)
             end
         end,
@@ -120,7 +126,7 @@ combine_operators(I, J, S1, S2, A, Target) ->
 
 %% @doc: count all solutions in the array
 solution_count(A) ->
-    F = fun(_Index, Solutions, Count) -> Count + orddict:size(Solutions) end,
+    F = fun(_Index, Solutions, Count) -> Count + dict:size(Solutions) end,
     array:sparse_foldl(F, 0, A).
 
 
@@ -139,7 +145,7 @@ best_solutions(A) ->
 
 best_per_used_numbers(A) ->
     F = fun(_UsedBitmap, Solutions, Acc) ->
-            OrderedSolutions = orddict:to_list(Solutions),
+            OrderedSolutions = lists:keysort(1, dict:to_list(Solutions)),
             BestSolution = lists:nth(1, OrderedSolutions),
             [BestSolution | Acc]
         end,
