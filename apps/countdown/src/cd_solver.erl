@@ -46,7 +46,7 @@ initialize_solutions(Target, Numbers) ->
 %% @doc: entry point for recursively combining all number permutations with
 %% all operators
 combine(A, Target, Operators, Numbers) ->
-    combine(A, Target, Operators, Numbers, array_length(A)).
+    combine(A, Target, Operators, Numbers, solution_count(A)).
 
 %% @doc: combination on the array level: combine every two sets of solutions
 %% (each set using the same input numbers)
@@ -71,7 +71,7 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
 
     A1 = array:sparse_foldl(FI, A, A),
 
-    case array_length(A1) of
+    case solution_count(A1) of
         NumberOfSolutions -> % no new combinations found -> we are done
             A1;
         IncreasedNumberOfSolutions ->
@@ -121,9 +121,9 @@ combine_operators(I, J, S1, S2, A, Target) ->
     lists:foldl(F, A, ?OPERATORS).
 
 
-%% @doc: count all defined elements in an array
-array_length(A) ->
-    F = fun(_Index, _Value, Count) -> Count + 1 end,
+%% @doc: count all solutions in the array
+solution_count(A) ->
+    F = fun(_Index, Solutions, Count) -> Count + orddict:size(Solutions) end,
     array:sparse_foldl(F, 0, A).
 
 
