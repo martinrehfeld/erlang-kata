@@ -6,10 +6,10 @@
 %% only exported for eunit
 -export([add/2, subtract/2, multiply/2, divide/2]).
 
--define(OPERATORS, [{'+', fun add/2},
-                    {'-', fun subtract/2},
-                    {'*', fun multiply/2},
-                    {'/', fun divide/2}]).
+-define(OPERATORS, [{<<"+">>, fun add/2},
+                    {<<"-">>, fun subtract/2},
+                    {<<"*">>, fun multiply/2},
+                    {<<"/">>, fun divide/2}]).
 
 -record(solution, {result, expression}).
 
@@ -35,10 +35,9 @@ initialize_solutions(Target, Numbers) ->
             UsedBitmap = bitmap_for_index(Index),
             Number = lists:nth(Index, Numbers),
             Delta = abs(Target - Number),
-            Expression = integer_to_list(Number),
+            Expression = list_to_binary(integer_to_list(Number)),
             S = #solution{result=Number, expression=Expression},
-            Solutions = orddict:from_list([{Delta, S}]),
-            array:set(UsedBitmap, Solutions, Array)
+            array:set(UsedBitmap, [{Delta, S}], Array)
         end,
     lists:foldl(F, A, lists:seq(1, length(Numbers))).
 
@@ -105,11 +104,9 @@ combine_operators(I, J, S1, S2, A, Target) ->
                 not_allowed -> Array;
                 no_op -> Array;
                 Result ->
-                    Operator = atom_to_list(OpSymbol),
                     Expression =
-                        "(" ++ S1#solution.expression ++
-                               Operator ++
-                               S2#solution.expression ++ ")",
+                        iolist_to_binary([<<$(>>, S1#solution.expression,
+                                          OpSymbol, S2#solution.expression, <<$)>>]),
                     Solution = #solution{result=Result, expression=Expression},
                     Delta = abs(Target - Result),
                     Index = I bor J,
