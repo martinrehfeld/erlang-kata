@@ -18,14 +18,15 @@ solutions(Target, Numbers) ->
     A = initialize_solutions(Target, Numbers),
     A1 = combine(A, Target, ?OPERATORS, Numbers),
     BestSolutions = best_solutions(A1),
-    error_logger:info_msg("Best solution(s):~n~s~n", [string:join(format_solutions(BestSolutions), "\n")]),
+    error_logger:info_msg("Best solution(s):~n~s~n",
+                          [string:join(format_solutions(BestSolutions), "\n")]),
     BestSolutions.
 
 
-%% @doc: Seed an array with the base expressions.
+%% @doc: Seed an array with the base expressions aka the given numbers.
 %% The solutions array uses a bitmap of used numbers for a given expression as
 %% index and has elements of the form:
-%% [{DeltaToTargetValue, ExpressionString}, ...]
+%% [{DeltaToTargetValue, #solution}, ...]
 initialize_solutions(Target, Numbers) ->
     MapSize = 1 bsl length(Numbers),
     A = array:new(MapSize, {default, []}),
@@ -42,46 +43,22 @@ initialize_solutions(Target, Numbers) ->
     lists:foldl(F, A, lists:seq(1, length(Numbers))).
 
 
-best_solutions(A) ->
-    BestPerUsedNumbers = best_per_used_numbers(A),
-    best_of_best(BestPerUsedNumbers).
-
-
-best_per_used_numbers(A) ->
-    F = fun(_UsedBitmap, Solutions, Acc) ->
-            OrderedSolutions = orddict:to_list(Solutions),
-            BestSolution = lists:nth(1, OrderedSolutions),
-            [BestSolution | Acc]
-        end,
-    array:sparse_foldl(F, [], A).
-
-
-best_of_best(Solutions) ->
-    OrderedSolutions = lists:keysort(1, Solutions),
-    {LowestDelta, _} = lists:nth(1, OrderedSolutions),
-    lists:takewhile(fun ({D, _}) -> D =:= LowestDelta end, OrderedSolutions).
-
-
-format_solutions(Entries) ->
-    F = fun(Entry) ->
-            {Delta, #solution{result=Result, expression=Expression}} = Entry,
-            io_lib:format("~s = ~p # delta: ~p", [Expression, Result, Delta])
-        end,
-    lists:map(F, Entries).
-
+%% @doc: entry point for recursively combining all number permutations with
+%% all operators
 combine(A, Target, Operators, Numbers) ->
     combine(A, Target, Operators, Numbers, array_length(A)).
 
+%% @doc: combination on the array level: combine every two sets of solutions
+%% (each set using the same input numbers)
 combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
-    %% error_logger:info_msg("combine(~p, ~p, ~p, ~p, ~p)~n", [A, Target, Operators, Numbers, NumberOfSolutions]),
     FJ =
         fun(J, Solutions2, {I, Solutions1, Array}) ->
             case I band J of
-                0 -> % Bitmaps do not overlap
+                0 -> % Bitmaps do not overlap -> process
                     NewArray = combine_solutions(I, J, Solutions1, Solutions2, Array, Target),
                     {I, Solutions1, NewArray};
 
-                _ -> % Bitmaps *do* overlap
+                _ -> % Bitmaps *do* overlap -> skip
                     {I, Solutions1, Array}
             end
         end,
@@ -95,15 +72,16 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
     A1 = array:sparse_foldl(FI, A, A),
 
     case array_length(A1) of
-        NumberOfSolutions -> % no new solutions found
+        NumberOfSolutions -> % no new combinations found -> we are done
             A1;
         IncreasedNumberOfSolutions ->
             combine(A1, Target, Operators, Numbers, IncreasedNumberOfSolutions)
     end.
 
 
+%% @doc: combination on the solutions level: combine every two expressions with
+%% all the operators
 combine_solutions(I, J, Solutions1, Solutions2, A, Target) ->
-    %% error_logger:info_msg("combine_solutions(~p, ~p, ~p, ~p, _, _)~n", [I, J, Solutions1, Solutions2]),
     FT =
         fun(_T, Solution2, {Solution1, Array}) ->
             NewArray = combine_operators(I, J, Solution1, Solution2, Array, Target),
@@ -111,14 +89,16 @@ combine_solutions(I, J, Solutions1, Solutions2, A, Target) ->
         end,
 
     FS =
-        fun(_S, Solution1, Array) ->
-            {Solution1, NewArray} = orddict:fold(FT, {Solution1, Array}, Solutions2),
+        fun(_S, Solution, Array) ->
+            {Solution, NewArray} = orddict:fold(FT, {Solution, Array}, Solutions2),
             NewArray
         end,
 
     orddict:fold(FS, A, Solutions1).
 
 
+%% @doc: combination on the operator level: combine two specific solutions with
+%% all the operators
 combine_operators(I, J, S1, S2, A, Target) ->
     F = fun({OpSymbol, OpFn}, Array) ->
             case OpFn(S1#solution.result, S2#solution.result) of
@@ -147,7 +127,41 @@ array_length(A) ->
     array:sparse_foldl(F, 0, A).
 
 
+%% @doc: calculate the initial bitmap for a given index into the Numbers list
 bitmap_for_index(Index) -> 1 bsl (Index - 1).
+
+
+%%
+%% Selection and formatting of best solutions
+%%
+
+best_solutions(A) ->
+    BestPerUsedNumbers = best_per_used_numbers(A),
+    best_of_best(BestPerUsedNumbers).
+
+
+best_per_used_numbers(A) ->
+    F = fun(_UsedBitmap, Solutions, Acc) ->
+            OrderedSolutions = orddict:to_list(Solutions),
+            BestSolution = lists:nth(1, OrderedSolutions),
+            [BestSolution | Acc]
+        end,
+    array:sparse_foldl(F, [], A).
+
+
+best_of_best(Solutions) ->
+    OrderedSolutions = lists:keysort(1, Solutions),
+    {LowestDelta, _} = lists:nth(1, OrderedSolutions),
+    lists:takewhile(fun ({D, _}) -> D =:= LowestDelta end, OrderedSolutions).
+
+
+format_solutions(Entries) ->
+    F = fun(Entry) ->
+            {Delta, #solution{result=Result, expression=Expression}} = Entry,
+            io_lib:format("~s = ~p # delta: ~p", [Expression, Result, Delta])
+        end,
+    lists:map(F, Entries).
+
 
 %%
 %% Operators
