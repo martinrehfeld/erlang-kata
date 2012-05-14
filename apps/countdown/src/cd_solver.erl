@@ -29,7 +29,7 @@ solutions(Target, Numbers) ->
 %% [{DeltaToTargetValue, #solution}, ...]
 initialize_solutions(Target, Numbers) ->
     MapSize = 1 bsl length(Numbers),
-    A = array:new(MapSize),
+    A = array:new(MapSize, {default, dict:new()}),
 
     F = fun(Index, Array) ->
             UsedBitmap = bitmap_for_index(Index),
@@ -37,8 +37,7 @@ initialize_solutions(Target, Numbers) ->
             Delta = abs(Target - Number),
             Expression = list_to_binary(integer_to_list(Number)),
             S = #solution{result=Number, expression=Expression},
-            Dict = dict:new(),
-            array:set(UsedBitmap, dict:store(Delta, S, Dict), Array)
+            array:set(UsedBitmap, dict:store(Delta, S, dict:new()), Array)
         end,
     lists:foldl(F, A, lists:seq(1, length(Numbers))).
 
@@ -112,12 +111,7 @@ combine_operators(I, J, S1, S2, A, Target) ->
                     Delta = abs(Target - Result),
                     Index = I bor J,
                     Entries = array:get(Index, Array),
-                    Dict =
-                        case Entries of
-                            undefined -> dict:new();
-                            Entries -> Entries
-                        end,
-                    NewEntries = dict:store(Delta, Solution, Dict),
+                    NewEntries = dict:store(Delta, Solution, Entries),
                     array:set(Index, NewEntries, Array)
             end
         end,
