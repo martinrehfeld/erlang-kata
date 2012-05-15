@@ -1,10 +1,10 @@
 # Today's Kata: The Countdown Game
 
-I stumbled across this (little challenge on Stack Overflow)[http://stackoverflow.com/questions/4586814/code-golf-countdown-number-game] and wanted to try it Erlang.
+I stumbled across this [little challenge on Stack Overflow](http://stackoverflow.com/questions/4586814/code-golf-countdown-number-game) and wanted to try it Erlang.
 
 The task is inspired by the well-known British TV game show Countdown.
 
-If you fancy seeing a clip of this game in action, check out this (YouTube clip)[http://www.youtube.com/watch?v=pfa3MHLLSWI]. It features the wonderful late Richard Whitely in 1997.
+If you fancy seeing a clip of this game in action, check out this [YouTube clip](http://www.youtube.com/watch?v=pfa3MHLLSWI). It features the wonderful late Richard Whitely in 1997.
 
 You are given 6 numbers, chosen at random from the set {1, 2, 3, 4, 5, 6, 8, 9,
 10, 25, 50, 75, 100}, and a random target number between 100 and 999. The aim
@@ -22,9 +22,9 @@ always return the closest-possible result to the target, and must run in at
 most 1 minute on a standard PC. Note that in the case where more than one
 solution exists, any single solution is sufficient.
 
-{50, 100, 4, 2, 2, 4}, target 203
-e.g. 100 * 2 + 2 + (4 / 4) (exact)
-e.g. (100 + 50) * 4 * 2 / (4 + 2) (exact)
+    {50, 100, 4, 2, 2, 4}, target 203
+    e.g. 100 * 2 + 2 + (4 / 4) (exact)
+    e.g. (100 + 50) * 4 * 2 / (4 + 2) (exact)
 
 ## Erlang Solution
 
