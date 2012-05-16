@@ -6,6 +6,7 @@
 %% only exported for eunit
 -export([add/2, subtract/2, multiply/2, divide/2]).
 
+-define(i2b(I), list_to_binary(integer_to_list(I))).
 -define(OPERATORS, [{<<"+">>, fun add/2},
                     {<<"-">>, fun subtract/2},
                     {<<"*">>, fun multiply/2},
@@ -14,6 +15,7 @@
 -record(solution, {result, expression}).
 
 
+%% @doc: solve Countdown game for given Target and Numbers
 solutions(Target, Numbers) ->
     A = initialize_solutions(Target, Numbers),
     A1 = combine(A, Target, ?OPERATORS, Numbers),
@@ -25,8 +27,7 @@ solutions(Target, Numbers) ->
 
 %% @doc: Seed an array with the base expressions aka the given numbers.
 %% The solutions array uses a bitmap of used numbers for a given expression as
-%% index and has elements of the form:
-%% [{DeltaToTargetValue, #solution}, ...]
+%% index and has dict elements with Key:Delta to target, Value: #solution
 initialize_solutions(Target, Numbers) ->
     MapSize = 1 bsl length(Numbers),
     A = array:new(MapSize, {default, dict:new()}),
@@ -35,9 +36,9 @@ initialize_solutions(Target, Numbers) ->
             UsedBitmap = bitmap_for_index(Index),
             Number = lists:nth(Index, Numbers),
             Delta = abs(Target - Number),
-            Expression = list_to_binary(integer_to_list(Number)),
+            Expression = ?i2b(Number),
             S = #solution{result=Number, expression=Expression},
-            array:set(UsedBitmap, dict:store(Delta, S, dict:new()), Array)
+            store_solution(Array, UsedBitmap, Delta, S)
         end,
     lists:foldl(F, A, lists:seq(1, length(Numbers))).
 
@@ -73,6 +74,7 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
     case solution_count(A1) of
         NumberOfSolutions -> % no new combinations found -> we are done
             A1;
+
         IncreasedNumberOfSolutions ->
             combine(A1, Target, Operators, Numbers, IncreasedNumberOfSolutions)
     end.
@@ -102,7 +104,8 @@ combine_operators(I, J, S1, S2, A, Target) ->
     F = fun({OpSymbol, OpFn}, Array) ->
             case OpFn(S1#solution.result, S2#solution.result) of
                 not_allowed -> Array;
-                no_op -> Array;
+                no_op       -> Array;
+
                 Result ->
                     Expression =
                         iolist_to_binary([<<$(>>, S1#solution.expression,
@@ -110,9 +113,7 @@ combine_operators(I, J, S1, S2, A, Target) ->
                     Solution = #solution{result=Result, expression=Expression},
                     Delta = abs(Target - Result),
                     Index = I bor J,
-                    Entries = array:get(Index, Array),
-                    NewEntries = dict:store(Delta, Solution, Entries),
-                    array:set(Index, NewEntries, Array)
+                    store_solution(Array, Index, Delta, Solution)
             end
         end,
     lists:foldl(F, A, ?OPERATORS).
@@ -122,6 +123,12 @@ combine_operators(I, J, S1, S2, A, Target) ->
 solution_count(A) ->
     F = fun(_Index, Solutions, Count) -> Count + dict:size(Solutions) end,
     array:sparse_foldl(F, 0, A).
+
+
+store_solution(Array, Index, Delta, #solution{} = Solution) ->
+    Entries = array:get(Index, Array),
+    NewEntries = dict:store(Delta, Solution, Entries),
+    array:set(Index, NewEntries, Array).
 
 
 %% @doc: calculate the initial bitmap for a given index into the Numbers list
