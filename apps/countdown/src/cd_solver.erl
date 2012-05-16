@@ -32,12 +32,12 @@ initialize_solutions(Target, Numbers) ->
     MapSize = 1 bsl length(Numbers),
     A = array:new(MapSize, {default, dict:new()}),
 
-    F = fun(Index, Array) ->
+    F = fun (Index, Array) ->
             UsedBitmap = bitmap_for_index(Index),
             Number = lists:nth(Index, Numbers),
             Delta = abs(Target - Number),
             Expression = ?i2b(Number),
-            S = #solution{result=Number, expression=Expression},
+            S = #solution{result = Number, expression = Expression},
             store_solution(Array, UsedBitmap, Delta, S)
         end,
     lists:foldl(F, A, lists:seq(1, length(Numbers))).
@@ -52,7 +52,7 @@ combine(A, Target, Operators, Numbers) ->
 %% (each set using the same input numbers)
 combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
     FJ =
-        fun(J, Solutions2, {I, Solutions1, Array}) ->
+        fun (J, Solutions2, {I, Solutions1, Array}) ->
             case I band J of
                 0 -> % Bitmaps do not overlap -> process
                     NewArray = combine_solutions(I, J, Solutions1, Solutions2, Array, Target),
@@ -64,7 +64,7 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
         end,
 
     FI =
-        fun(I, Solutions, Array) ->
+        fun (I, Solutions, Array) ->
             {I, Solutions, NewArray} = array:sparse_foldl(FJ, {I, Solutions, Array}, Array),
             NewArray
         end,
@@ -84,13 +84,13 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
 %% all the operators
 combine_solutions(I, J, Solutions1, Solutions2, A, Target) ->
     FT =
-        fun(_T, Solution2, {Solution1, Array}) ->
+        fun (_T, Solution2, {Solution1, Array}) ->
             NewArray = combine_operators(I, J, Solution1, Solution2, Array, Target),
             {Solution1, NewArray}
         end,
 
     FS =
-        fun(_S, Solution, Array) ->
+        fun (_S, Solution, Array) ->
             {Solution, NewArray} = dict:fold(FT, {Solution, Array}, Solutions2),
             NewArray
         end,
@@ -101,16 +101,15 @@ combine_solutions(I, J, Solutions1, Solutions2, A, Target) ->
 %% @doc: combination on the operator level: combine two specific solutions with
 %% all the operators
 combine_operators(I, J, S1, S2, A, Target) ->
-    F = fun({OpSymbol, OpFn}, Array) ->
+    F = fun ({OpSymbol, OpFn}, Array) ->
             case OpFn(S1#solution.result, S2#solution.result) of
-                not_allowed -> Array;
-                no_op       -> Array;
+                skip -> Array;
 
                 Result ->
                     Expression =
                         iolist_to_binary([<<$(>>, S1#solution.expression,
                                           OpSymbol, S2#solution.expression, <<$)>>]),
-                    Solution = #solution{result=Result, expression=Expression},
+                    Solution = #solution{result = Result, expression = Expression},
                     Delta = abs(Target - Result),
                     Index = I bor J,
                     store_solution(Array, Index, Delta, Solution)
@@ -121,7 +120,7 @@ combine_operators(I, J, S1, S2, A, Target) ->
 
 %% @doc: count all solutions in the array
 solution_count(A) ->
-    F = fun(_Index, Solutions, Count) -> Count + dict:size(Solutions) end,
+    F = fun (_Index, Solutions, Count) -> Count + dict:size(Solutions) end,
     array:sparse_foldl(F, 0, A).
 
 
@@ -145,7 +144,7 @@ best_solutions(A) ->
 
 
 best_per_used_numbers(A) ->
-    F = fun(_UsedBitmap, Solutions, Acc) ->
+    F = fun (_UsedBitmap, Solutions, Acc) ->
             OrderedSolutions = lists:keysort(1, dict:to_list(Solutions)),
             BestSolution = lists:nth(1, OrderedSolutions),
             [BestSolution | Acc]
@@ -160,8 +159,8 @@ best_of_best(Solutions) ->
 
 
 format_solutions(Entries) ->
-    F = fun(Entry) ->
-            {Delta, #solution{result=Result, expression=Expression}} = Entry,
+    F = fun (Entry) ->
+            {Delta, #solution{result = Result, expression = Expression}} = Entry,
             io_lib:format("~s = ~p # delta: ~p", [Expression, Result, Delta])
         end,
     lists:map(F, Entries).
@@ -172,16 +171,16 @@ format_solutions(Entries) ->
 %%
 
 add(N1, N2) when N2 =/= 0 -> N1 + N2;
-add(_N1, _N2) -> no_op.
+add(_N1, _N2) -> skip.
 
-subtract(N1, N2)  when N1 < N2 -> not_allowed;
-subtract(_N1, N2) when N2 =:= 0 -> no_op;
-subtract(N1, N2)  when N1 >= N2 -> N1 - N2.
+subtract(N1, N2)  when N1 < N2 -> skip;
+subtract(_N1, N2) when N2 =:= 0 -> skip;
+subtract(N1, N2) -> N1 - N2.
 
 multiply(N1, N2) when N2 =/= 1 -> N1 * N2;
-multiply(_N1, _N2) -> no_op.
+multiply(_N1, _N2) -> skip.
 
-divide(_N1, N2) when N2 =:= 0 -> not_allowed;
-divide(N1, N2) when N1 rem N2 =/= 0 -> not_allowed;
-divide(_N1, N2) when N2 =:= 1 -> no_op;
-divide(N1, N2) when N1 rem N2 =:= 0 -> N1 div N2.
+divide(_N1, N2) when N2 =:= 0 -> skip;
+divide(N1, N2) when N1 rem N2 =/= 0 -> skip;
+divide(_N1, N2) when N2 =:= 1 -> skip;
+divide(N1, N2) -> N1 div N2.
