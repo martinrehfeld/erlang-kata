@@ -1,6 +1,6 @@
 # Today's Kata: The Countdown Game
 
-I stumbled across this [little challenge on Stack Overflow](http://stackoverflow.com/questions/4586814/code-golf-countdown-number-game) and wanted to try it Erlang.
+I stumbled across this [little challenge on Stack Overflow](http://stackoverflow.com/questions/4586814/code-golf-countdown-number-game) and wanted to try it in Erlang.
 
 The task is inspired by the well-known British TV game show Countdown.
 
