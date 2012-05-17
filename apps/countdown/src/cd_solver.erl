@@ -19,8 +19,9 @@ solutions(Target, Numbers) ->
     A = initialize_solutions(Target, Numbers),
     A1 = combine(A, Target, ?OPERATORS, Numbers),
     BestSolutions = best_solutions(A1),
-    error_logger:info_msg("Best solution(s):~n~s~n",
-                          [string:join(format_solutions(BestSolutions), "\n")]),
+    error_logger:info_msg("Best solution(s) out of ~w:~n~s~n",
+                          [solution_count(A1),
+                           string:join(format_solutions(BestSolutions), "\n")]),
     BestSolutions.
 
 
@@ -50,22 +51,37 @@ combine(A, Target, Operators, Numbers) ->
 %% (each set using the same input numbers)
 combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
     FJ =
-        fun (J, Solutions2, {I, Solutions1, Array}) ->
+        fun (J, Solutions2, {I, Solutions1, Count}) ->
             case I band J of
                 0 -> % Bitmaps do not overlap -> process
                     Index = I bor J,
-                    NewArray = combine_solutions(Index, Solutions1, Solutions2, Array, Target),
-                    {I, Solutions1, NewArray};
+                    spawn(fun () ->
+                              combine_solutions(self(), Index, Solutions1,
+                                    Solutions2, Target)
+                          end),
+                    {I, Solutions1, Count + 1};
 
                 _ -> % Bitmaps *do* overlap -> skip
-                    {I, Solutions1, Array}
+                    {I, Solutions1, Count}
+            end
+        end,
+
+    F = fun (Index, Solutions, Array) ->
+            array:set(Index, Solutions, Array)
+        end,
+
+    FK =
+        fun(_Count, Array) ->
+            receive
+                {new_solutions, AddtionalArray} ->
+                    array:sparse_foldl(F, Array, AddtionalArray)
             end
         end,
 
     FI =
         fun (I, Solutions, Array) ->
-            {I, Solutions, NewArray} = array:sparse_foldl(FJ, {I, Solutions, Array}, Array),
-            NewArray
+            {I, Solutions, Count} = array:sparse_foldl(FJ, {I, Solutions, 0}, Array),
+            lists:foldl(FK, Array, lists:seq(1, Count))
         end,
 
     A1 = array:sparse_foldl(FI, A, A),
@@ -81,7 +97,7 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
 
 %% @doc: combination on the solutions level: combine every two expressions with
 %% all the operators
-combine_solutions(Index, Solutions1, Solutions2, A, Target) ->
+combine_solutions(Pid, Index, Solutions1, Solutions2, Target) ->
     FT =
         fun (_T, Solution2, {Solution1, Array}) ->
             NewArray = combine_operators(Index, Solution1, Solution2, Array, Target),
@@ -94,7 +110,7 @@ combine_solutions(Index, Solutions1, Solutions2, A, Target) ->
             NewArray
         end,
 
-    dict:fold(FS, A, Solutions1).
+    Pid ! {new_solutions, dict:fold(FS, array:new({default, dict:new()}), Solutions1)}.
 
 
 %% @doc: combination on the operator level: combine two specific solutions with
