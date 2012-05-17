@@ -53,7 +53,8 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
         fun (J, Solutions2, {I, Solutions1, Array}) ->
             case I band J of
                 0 -> % Bitmaps do not overlap -> process
-                    NewArray = combine_solutions(I, J, Solutions1, Solutions2, Array, Target),
+                    Index = I bor J,
+                    NewArray = combine_solutions(Index, Solutions1, Solutions2, Array, Target),
                     {I, Solutions1, NewArray};
 
                 _ -> % Bitmaps *do* overlap -> skip
@@ -80,10 +81,10 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
 
 %% @doc: combination on the solutions level: combine every two expressions with
 %% all the operators
-combine_solutions(I, J, Solutions1, Solutions2, A, Target) ->
+combine_solutions(Index, Solutions1, Solutions2, A, Target) ->
     FT =
         fun (_T, Solution2, {Solution1, Array}) ->
-            NewArray = combine_operators(I, J, Solution1, Solution2, Array, Target),
+            NewArray = combine_operators(Index, Solution1, Solution2, Array, Target),
             {Solution1, NewArray}
         end,
 
@@ -98,7 +99,7 @@ combine_solutions(I, J, Solutions1, Solutions2, A, Target) ->
 
 %% @doc: combination on the operator level: combine two specific solutions with
 %% all the operators
-combine_operators(I, J, S1, S2, A, Target) ->
+combine_operators(Index, S1, S2, A, Target) ->
     F = fun ({OpSymbol, OpFn}, Array) ->
             case OpFn(S1#solution.result, S2#solution.result) of
                 skip -> Array;
@@ -108,7 +109,6 @@ combine_operators(I, J, S1, S2, A, Target) ->
                                    S2#solution.expression },
                     Solution = #solution{result = Result, expression = Expression},
                     Delta = abs(Target - Result),
-                    Index = I bor J,
                     add_solution(Array, Index, Delta, Solution)
             end
         end,
