@@ -38,7 +38,7 @@ initialize_solutions(Target, Numbers) ->
             Delta = abs(Target - Number),
             Expression = ?i2b(Number),
             S = #solution{result = Number, expression = Expression},
-            store_solution(Array, UsedBitmap, Delta, S)
+            add_solution(Array, UsedBitmap, Delta, S)
         end,
     lists:foldl(F, A, lists:seq(1, length(Numbers))).
 
@@ -112,7 +112,7 @@ combine_operators(I, J, S1, S2, A, Target) ->
                     Solution = #solution{result = Result, expression = Expression},
                     Delta = abs(Target - Result),
                     Index = I bor J,
-                    store_solution(Array, Index, Delta, Solution)
+                    add_solution(Array, Index, Delta, Solution)
             end
         end,
     lists:foldl(F, A, ?OPERATORS).
@@ -124,7 +124,8 @@ solution_count(A) ->
     array:sparse_foldl(F, 0, A).
 
 
-store_solution(Array, Index, Delta, #solution{} = Solution) ->
+%% @doc: add a new solution to the array/dict
+add_solution(Array, Index, Delta, #solution{} = Solution) ->
     Entries = array:get(Index, Array),
     NewEntries = dict:store(Delta, Solution, Entries),
     array:set(Index, NewEntries, Array).
@@ -159,8 +160,7 @@ best_of_best(Solutions) ->
 
 
 format_solutions(Entries) ->
-    F = fun (Entry) ->
-            {Delta, #solution{result = Result, expression = Expression}} = Entry,
+    F = fun ({Delta, #solution{result = Result, expression = Expression}}) ->
             io_lib:format("~s = ~p # delta: ~p", [Expression, Result, Delta])
         end,
     lists:map(F, Entries).
@@ -173,7 +173,7 @@ format_solutions(Entries) ->
 add(N1, N2) when N2 =/= 0 -> N1 + N2;
 add(_N1, _N2) -> skip.
 
-subtract(N1, N2)  when N1 < N2 -> skip;
+subtract(N1, N2) when N1 < N2 -> skip;
 subtract(_N1, N2) when N2 =:= 0 -> skip;
 subtract(N1, N2) -> N1 - N2.
 
