@@ -6,11 +6,10 @@
 %% only exported for eunit
 -export([add/2, subtract/2, multiply/2, divide/2]).
 
--define(i2b(I), list_to_binary(integer_to_list(I))).
--define(OPERATORS, [{<<"+">>, fun add/2},
-                    {<<"-">>, fun subtract/2},
-                    {<<"*">>, fun multiply/2},
-                    {<<"/">>, fun divide/2}]).
+-define(OPERATORS, [{'+', fun add/2},
+                    {'-', fun subtract/2},
+                    {'*', fun multiply/2},
+                    {'/', fun divide/2}]).
 
 -record(solution, {result, expression}).
 
@@ -20,6 +19,7 @@ solutions(Target, Numbers) ->
     A = initialize_solutions(Target, Numbers),
     A1 = combine(A, Target, ?OPERATORS, Numbers),
     BestSolutions = best_solutions(A1),
+    %%error_logger:info_msg("Best solution(s):~n~p~n", [BestSolutions]),
     error_logger:info_msg("Best solution(s):~n~s~n",
                           [string:join(format_solutions(BestSolutions), "\n")]),
     BestSolutions.
@@ -36,8 +36,7 @@ initialize_solutions(Target, Numbers) ->
             UsedBitmap = bitmap_for_index(Index),
             Number = lists:nth(Index, Numbers),
             Delta = abs(Target - Number),
-            Expression = ?i2b(Number),
-            S = #solution{result = Number, expression = Expression},
+            S = #solution{result = Number, expression = Number},
             add_solution(Array, UsedBitmap, Delta, S)
         end,
     lists:foldl(F, A, lists:seq(1, length(Numbers))).
@@ -106,9 +105,8 @@ combine_operators(I, J, S1, S2, A, Target) ->
                 skip -> Array;
 
                 Result ->
-                    Expression =
-                        iolist_to_binary([<<$(>>, S1#solution.expression,
-                                          OpSymbol, S2#solution.expression, <<$)>>]),
+                    Expression = { S1#solution.expression, OpSymbol,
+                                   S2#solution.expression },
                     Solution = #solution{result = Result, expression = Expression},
                     Delta = abs(Target - Result),
                     Index = I bor J,
@@ -160,10 +158,26 @@ best_of_best(Solutions) ->
 
 
 format_solutions(Entries) ->
-    F = fun ({Delta, #solution{result = Result, expression = Expression}}) ->
-            io_lib:format("~s = ~p # delta: ~p", [Expression, Result, Delta])
-        end,
-    lists:map(F, Entries).
+    [ format_solution(Delta, Solution) || {Delta, Solution} <- Entries ].
+
+format_solution(Delta, #solution{result = Result, expression = Expression}) ->
+    io_lib:format("~s = ~w # ~s",
+                  [format_solution(Expression), Result, remark(Delta)]).
+
+format_solution(Expression) when is_tuple(Expression) ->
+    { Operand1, Operator, Operand2 } = Expression,
+    io_lib:format("(~s ~s ~s)", [format_solution(Operand1),
+                                 atom_to_list(Operator),
+                                 format_solution(Operand2)]);
+format_solution(Expression) ->
+    integer_to_list(Expression).
+
+
+remark(Delta) ->
+    case Delta of
+        0 -> "exact";
+        _ -> "off by " ++ integer_to_list(Delta)
+    end.
 
 
 %%
@@ -180,7 +194,7 @@ subtract(N1, N2) -> N1 - N2.
 multiply(N1, N2) when N2 =/= 1 -> N1 * N2;
 multiply(_N1, _N2) -> skip.
 
-divide(_N1, N2) when N2 =:= 0 -> skip;
 divide(N1, N2) when N1 rem N2 =/= 0 -> skip;
+divide(_N1, N2) when N2 =:= 0 -> skip;
 divide(_N1, N2) when N2 =:= 1 -> skip;
 divide(N1, N2) -> N1 div N2.
