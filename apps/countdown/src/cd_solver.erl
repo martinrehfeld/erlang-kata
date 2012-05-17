@@ -19,7 +19,6 @@ solutions(Target, Numbers) ->
     A = initialize_solutions(Target, Numbers),
     A1 = combine(A, Target, ?OPERATORS, Numbers),
     BestSolutions = best_solutions(A1),
-    %%error_logger:info_msg("Best solution(s):~n~p~n", [BestSolutions]),
     error_logger:info_msg("Best solution(s):~n~s~n",
                           [string:join(format_solutions(BestSolutions), "\n")]),
     BestSolutions.
