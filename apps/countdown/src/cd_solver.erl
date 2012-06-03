@@ -68,7 +68,10 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
         end,
 
     F = fun (Index, Solutions, Array) ->
-            array:set(Index, Solutions, Array)
+            ExistingSolutions = array:get(Index, Array),
+            MergedSolutions =
+                dict:merge(fun(_K, V1, _V2) -> V1 end, ExistingSolutions, Solutions),
+            array:set(Index, MergedSolutions, Array)
         end,
 
     FK =
