@@ -51,18 +51,19 @@ combine(A, Target, Operators, Numbers) ->
 %% (each set using the same input numbers)
 combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
     FJ =
-        fun (J, Solutions2, {I, Solutions1, Count}) ->
+        fun (J, Solutions2, {I, Ref, Solutions1, Count}) ->
             case I band J of
                 0 -> % Bitmaps do not overlap -> process
                     Index = I bor J,
+                    Pid = self(),
                     spawn(fun () ->
-                              combine_solutions(self(), Index, Solutions1,
+                                combine_solutions(Pid, Ref, Index, Solutions1,
                                     Solutions2, Target)
                           end),
-                    {I, Solutions1, Count + 1};
+                    {I, Ref, Solutions1, Count + 1};
 
                 _ -> % Bitmaps *do* overlap -> skip
-                    {I, Solutions1, Count}
+                    {I, Ref, Solutions1, Count}
             end
         end,
 
@@ -71,17 +72,18 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
         end,
 
     FK =
-        fun(_Count, Array) ->
+        fun(Ref, Array) ->
             receive
-                {new_solutions, AddtionalArray} ->
+                {new_solutions, Ref, AddtionalArray} ->
                     array:sparse_foldl(F, Array, AddtionalArray)
             end
         end,
 
     FI =
         fun (I, Solutions, Array) ->
-            {I, Solutions, Count} = array:sparse_foldl(FJ, {I, Solutions, 0}, Array),
-            lists:foldl(FK, Array, lists:seq(1, Count))
+            Ref = make_ref(),
+            {I, Ref, Solutions, Count} = array:sparse_foldl(FJ, {I, Ref, Solutions, 0}, Array),
+            lists:foldl(FK, Array, lists:duplicate(Count, Ref))
         end,
 
     A1 = array:sparse_foldl(FI, A, A),
@@ -97,7 +99,7 @@ combine(A, Target, Operators, Numbers, NumberOfSolutions) ->
 
 %% @doc: combination on the solutions level: combine every two expressions with
 %% all the operators
-combine_solutions(Pid, Index, Solutions1, Solutions2, Target) ->
+combine_solutions(Pid, Ref, Index, Solutions1, Solutions2, Target) ->
     FT =
         fun (_T, Solution2, {Solution1, Array}) ->
             NewArray = combine_operators(Index, Solution1, Solution2, Array, Target),
@@ -110,7 +112,8 @@ combine_solutions(Pid, Index, Solutions1, Solutions2, Target) ->
             NewArray
         end,
 
-    Pid ! {new_solutions, dict:fold(FS, array:new({default, dict:new()}), Solutions1)}.
+    Pid ! {new_solutions, Ref,
+           dict:fold(FS, array:new({default, dict:new()}), Solutions1)}.
 
 
 %% @doc: combination on the operator level: combine two specific solutions with
