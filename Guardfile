@@ -2,6 +2,14 @@
 
 # automatically run the eunit tests
 
+unless defined?(Growl)
+  class Growl
+    def self.notify_ok(*args); end
+    def self.notify_warning(*args); end
+    def self.notify_error(*args); end
+  end
+end
+
 def run_eunit_all
   cmd = "./rebar eunit skip_deps=true"
   puts "Executing #{cmd}"
@@ -13,9 +21,10 @@ def run_eunit_all
   end
 end
 
-def run_eunit(app, src, suite)
-  if File.exist?(File.join(File.dirname(__FILE__), app, 'test', "#{suite}_tests.erl"))
-    cmd = "./rebar eunit skip_deps=true suite=#{suite}"
+def run_eunit(app_dir, src, suite)
+  if File.exist?(File.join(File.dirname(__FILE__), app_dir, 'test', "#{suite}_tests.erl"))
+    app = app_dir.sub(/^apps\//, '').chop
+    cmd = "./rebar eunit skip_deps=true apps=#{app} suites=#{suite}"
     puts "Executing #{cmd}"
     puts `#{cmd}`
     if $? == 0
@@ -27,9 +36,6 @@ def run_eunit(app, src, suite)
     puts "No tests for #{suite.inspect}"
     Growl.notify_warning "No tests for #{suite}!"
   end
-end
-
-def run_spec
 end
 
 guard 'shell' do
